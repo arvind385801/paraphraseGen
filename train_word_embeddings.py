@@ -44,7 +44,7 @@ if __name__ == '__main__':
     params = Parameters(batch_loader.max_word_len,
                         batch_loader.max_seq_len,
                         batch_loader.words_vocab_size,
-                        batch_loader.chars_vocab_size)
+                        batch_loader.chars_vocab_size, path)
 
     neg_loss = NEG_loss(params.word_vocab_size, params.word_embed_size)
     if args.use_cuda:
