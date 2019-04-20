@@ -19,8 +19,8 @@ class RVAE(nn.Module):
         self.params = params
         self.params_2 = params_2        #Encoder-2 parameters
 
-        self.embedding = Embedding(self.params, '')
-        self.embedding_2 = Embedding(self.params_2, '',True)
+        self.embedding = Embedding(self.params, params.path)
+        self.embedding_2 = Embedding(self.params_2, params_2.path ,True)
 
         self.encoder = Encoder(self.params)
         self.encoder_2 = Encoder(self.params_2)

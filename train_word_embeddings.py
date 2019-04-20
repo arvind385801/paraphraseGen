@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import argparse
-
+import os
 import numpy as np
 import torch as t
 from torch.autograd import Variable
@@ -19,23 +19,24 @@ if __name__ == '__main__':
                         help='batch size (default: 10)')
     parser.add_argument('--num-sample', type=int, default=5, metavar='NS',
                         help='num sample (default: 5)')
-    parser.add_argument('--use-cuda', type=bool, default=True, metavar='CUDA',
+    parser.add_argument('--use-cuda', action='store_false',#default value True #type=bool, default=True, metavar='CUDA',
                         help='use cuda (default: True)')
+    parser.add_argument('--path', type=str, default='', 
+                        help='Path where the files are located')
     args = parser.parse_args()
 
+    path=args.path
 
-    path=''
+    data_files = [path + 'train.txt',
+                       path + 'test.txt']
 
-    data_files = [path + 'data/train.txt',
-                       path + 'data/test.txt']
+    idx_files = [path + 'words_vocab.pkl',
+                      path + 'characters_vocab.pkl']
 
-    idx_files = [path + 'data/words_vocab.pkl',
-                      path + 'data/characters_vocab.pkl']
-
-    tensor_files = [[path + 'data/train_word_tensor.npy',
-                          path + 'data/valid_word_tensor.npy'],
-                         [path + 'data/train_character_tensor.npy',
-                          path + 'data/valid_character_tensor.npy']]
+    tensor_files = [[path + 'train_word_tensor.npy',
+                          path + 'valid_word_tensor.npy'],
+                         [path + 'train_character_tensor.npy',
+                          path + 'valid_character_tensor.npy']]
 
     batch_loader = BatchLoader(data_files, idx_files, tensor_files, path)
     
@@ -47,6 +48,7 @@ if __name__ == '__main__':
 
     neg_loss = NEG_loss(params.word_vocab_size, params.word_embed_size)
     if args.use_cuda:
+        print ("Using cuda")
         neg_loss = neg_loss.cuda()
 
     # NEG_loss is defined over two embedding matrixes with shape of [params.word_vocab_size, params.word_embed_size]
@@ -68,9 +70,9 @@ if __name__ == '__main__':
         optimizer.step()
 
         if iteration % 500 == 0:
-            out = out.cpu().data.numpy()[0]
+            out = out.item()#[0] #cpu().data.numpy()[0]
             print('iteration = {}, loss = {}'.format(iteration, out))
 
     word_embeddings = neg_loss.input_embeddings()
     #Saves the word embeddings at the end of this programs
-    np.save('data/word_embeddings.npy', word_embeddings)
+    np.save(os.path.join(path,'word_embeddings.npy'), word_embeddings)

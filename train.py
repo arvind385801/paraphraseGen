@@ -1,7 +1,8 @@
 import argparse
 import os
-
+import csv
 import numpy as np
+import datetime
 import torch as t
 from torch.optim import Adam
 
@@ -9,17 +10,23 @@ from utils.batch_loader import BatchLoader
 from utils.parameters import Parameters
 from model.rvae import RVAE
 
+def writeColumns(filename, zipList):
+    with open(filename, "w") as f:
+        writer = csv.writer(f)
+        for row in zipList:
+            writer.writerow(row) # for more writerow
+    return
+
 if __name__ == "__main__":
 
-    if not os.path.exists('data/word_embeddings.npy'):
-        raise FileNotFoundError("word embeddings file was't found")
+    folder  = datetime.datetime.now().strftime("%y-%m-%d_%H-%M")
 
     parser = argparse.ArgumentParser(description='RVAE')
     parser.add_argument('--num-iterations', type=int, default=120000, metavar='NI',
                         help='num iterations (default: 120000)')
     parser.add_argument('--batch-size', type=int, default=32, metavar='BS',
                         help='batch size (default: 32)')
-    parser.add_argument('--use-cuda', type=bool, default=True, metavar='CUDA',
+    parser.add_argument('--use-cuda', action='store_false',#default value True #type=bool, default=True, metavar='CUDA',
                         help='use cuda (default: True)')
     parser.add_argument('--learning-rate', type=float, default=0.00005, metavar='LR',
                         help='learning rate (default: 0.00005)')
@@ -31,57 +38,64 @@ if __name__ == "__main__":
                         help='ce result path (default: '')')
     parser.add_argument('--kld-result', default='', metavar='KLD',
                         help='ce result path (default: '')')
-
+    parser.add_argument('--path', type=str, default='', 
+                        help='Path where the files are located')
     args = parser.parse_args()
+    path=args.path
+    os.makedirs(os.path.join(path,folder))
 
+    if not os.path.exists(path+'word_embeddings.npy'):
+        raise FileNotFoundError("word embeddings file was't found")
 
-    path=''
     
     ''' =================== Creating batch_loader for encoder-1 =========================================
     '''
-    data_files = [path + 'data/train.txt',
-                       path + 'data/test.txt']
+    data_files = [path + 'train.txt',
+                       path + 'test.txt']
 
-    idx_files = [path + 'data/words_vocab.pkl',
-                      path + 'data/characters_vocab.pkl']
+    idx_files = [path + 'words_vocab.pkl',
+                      path + 'characters_vocab.pkl']
 
-    tensor_files = [[path + 'data/train_word_tensor.npy',
-                          path + 'data/valid_word_tensor.npy'],
-                         [path + 'data/train_character_tensor.npy',
-                          path + 'data/valid_character_tensor.npy']]
+    tensor_files = [[path + 'train_word_tensor.npy',
+                          path + 'valid_word_tensor.npy'],
+                         [path + 'train_character_tensor.npy',
+                          path + 'valid_character_tensor.npy']]
 
     batch_loader = BatchLoader(data_files, idx_files, tensor_files, path)
     parameters = Parameters(batch_loader.max_word_len,
                             batch_loader.max_seq_len,
                             batch_loader.words_vocab_size,
-                            batch_loader.chars_vocab_size)
+                            batch_loader.chars_vocab_size,
+                            path)
 
 
     ''' =================== Doing the same for encoder-2 ===============================================
     '''
-    data_files = [path + 'data/super/train_2.txt',
-                       path + 'data/super/test_2.txt']
+    data_files = [path + 'super/train_2.txt',
+                       path + 'super/test_2.txt']
 
-    idx_files = [path + 'data/super/words_vocab_2.pkl',
-                      path + 'data/super/characters_vocab_2.pkl']
+    idx_files = [path + 'super/words_vocab_2.pkl',
+                      path + 'super/characters_vocab_2.pkl']
 
-    tensor_files = [[path + 'data/super/train_word_tensor_2.npy',
-                          path + 'data/super/valid_word_tensor_2.npy'],
-                         [path + 'data/super/train_character_tensor_2.npy',
-                          path + 'data/super/valid_character_tensor_2.npy']]
+    tensor_files = [[path + 'super/train_word_tensor_2.npy',
+                          path + 'super/valid_word_tensor_2.npy'],
+                         [path + 'super/train_character_tensor_2.npy',
+                          path + 'super/valid_character_tensor_2.npy']]
     batch_loader_2 = BatchLoader(data_files, idx_files, tensor_files, path)
     parameters_2 = Parameters(batch_loader_2.max_word_len,
                             batch_loader_2.max_seq_len,
                             batch_loader_2.words_vocab_size,
-                            batch_loader_2.chars_vocab_size)
+                            batch_loader_2.chars_vocab_size,
+                            path)
     '''=================================================================================================
     '''
 
 
     rvae = RVAE(parameters,parameters_2)
     if args.use_trained:
-        rvae.load_state_dict(t.load('trained_RVAE'))
+        rvae.load_state_dict(t.load(os.path.join(os.path.join(path,'trained_RVAE'))))
     if args.use_cuda:
+        print ("Using cuda")
         rvae = rvae.cuda()
 
     optimizer = Adam(rvae.learnable_parameters(), args.learning_rate)
@@ -89,8 +103,12 @@ if __name__ == "__main__":
     train_step = rvae.trainer(optimizer,batch_loader, batch_loader_2)
     validate = rvae.validater(batch_loader,batch_loader_2)
 
-    ce_result = []
-    kld_result = []
+    loss_tr_result = ["loss_train"]
+    ce_result = ["cross_entropy_train"]
+    kld_result = ["kld_train"]
+    coef_result = ["coef_train"]
+    it = ["iteration"]
+    loss_val_result =["loss_val"]
 
     start_index = 0
     # start_index_2 = 0
@@ -103,18 +121,20 @@ if __name__ == "__main__":
 
         # exit()
 
-        if iteration % 5 == 0:
+        if iteration % 10 == 0:
+            cross_entropy = round(cross_entropy.item(),2)
+            kld = round(kld.item(),2)
+            coef = round(coef,5)
             print('\n')
-            print('------------TRAIN-------------')
-            print('----------ITERATION-----------')
-            print(iteration)
-            print('--------CROSS-ENTROPY---------')
-            print(cross_entropy.data.cpu().numpy()[0])
-            print('-------------KLD--------------')
-            print(kld.data.cpu().numpy()[0])
-            print('-----------KLD-coef-----------')
-            print(coef)
-            print('------------------------------')
+            #print('------------TRAIN-------------')
+            print('ITERATION\tCROSS_ENT\tKLD\tCOEF')
+            print(iteration,"\t",cross_entropy,"\t",kld,"\t",coef) #.cpu().numpy()[0]
+
+            if iteration %10 ==0:
+                it.append(iteration)
+                ce_result.append(cross_entropy)
+                kld_result.append(kld)
+                coef_result.append(coef)
 
         # if iteration % 10 == 0:
         #     start_index_2 = (start_index_2+args.batch_size)%3900
@@ -146,6 +166,6 @@ if __name__ == "__main__":
             print('------------------------------')
             '''
     t.save(rvae.state_dict(), 'trained_RVAE')
-
+    writeColumns(os.path.join(path,folder,"log_loss.csv"), zip(it,ce_result,kld_result,coef_result))
     np.save('ce_result_{}.npy'.format(args.ce_result), np.array(ce_result))
     np.save('kld_result_npy_{}'.format(args.kld_result), np.array(kld_result))

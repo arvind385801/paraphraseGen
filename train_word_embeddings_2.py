@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import argparse
-
+import os
 import numpy as np
 import torch as t
 from torch.autograd import Variable
@@ -19,25 +19,25 @@ if __name__ == '__main__':
                         help='batch size (default: 10)')
     parser.add_argument('--num-sample', type=int, default=5, metavar='NS',
                         help='num sample (default: 5)')
-    parser.add_argument('--use-cuda', type=bool, default=True, metavar='CUDA',
+    parser.add_argument('--use-cuda', action='store_false',#default value True #, type=bool, default=True, metavar='CUDA',
                         help='use cuda (default: True)')
+    parser.add_argument('--path', type=str, default='', 
+                        help='Path where the files are located')
     args = parser.parse_args()
 
 
+    path=args.path
 
+    data_files = [path + 'super/train_2.txt',
+                       path + 'super/test_2.txt']
 
-    path=''
+    idx_files = [path + 'super/words_vocab_2.pkl',
+                      path + 'super/characters_vocab_2.pkl']
 
-    data_files = [path + 'data/super/train_2.txt',
-                       path + 'data/super/test_2.txt']
-
-    idx_files = [path + 'data/super/words_vocab_2.pkl',
-                      path + 'data/super/characters_vocab_2.pkl']
-
-    tensor_files = [[path + 'data/super/train_word_tensor_2.npy',
-                          path + 'data/super/valid_word_tensor_2.npy'],
-                         [path + 'data/super/train_character_tensor_2.npy',
-                          path + 'data/super/valid_character_tensor_2.npy']]
+    tensor_files = [[path + 'super/train_word_tensor_2.npy',
+                          path + 'super/valid_word_tensor_2.npy'],
+                         [path + 'super/train_character_tensor_2.npy',
+                          path + 'super/valid_character_tensor_2.npy']]
     batch_loader_2 = BatchLoader(data_files, idx_files, tensor_files, path)
 
 
@@ -72,9 +72,9 @@ if __name__ == '__main__':
         optimizer.step()
 
         if iteration % 500 == 0:
-            out = out.cpu().data.numpy()[0]
+            out = out.item()#.data[0]#.cpu().data.numpy()[0]
             print('iteration = {}, loss = {}'.format(iteration, out))
 
     word_embeddings = neg_loss.input_embeddings()
     #Saves the word embeddings at the end of this programs
-    np.save('data/super/word_embeddings.npy', word_embeddings)
+    np.save(os.path.join(path,'super/word_embeddings.npy'), word_embeddings)
