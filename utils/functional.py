@@ -28,4 +28,5 @@ def handle_inputs(inputs, use_cuda):
 
 def kld_coef(i):
     import math
-    return (math.tanh((i - 3500)/1000) + 1)/2
+    breakPoint = 10000#15000# 3500
+    return (math.tanh((i - breakPoint)/1000) + 1)/2

@@ -32,8 +32,8 @@ if __name__ == "__main__":
                         help='learning rate (default: 0.00005)')
     parser.add_argument('--dropout', type=float, default=0.3, metavar='DR',
                         help='dropout (default: 0.3)')
-    parser.add_argument('--use-trained', type=bool, default=False, metavar='UT',
-                        help='load pretrained model (default: False)')
+    parser.add_argument('--use-trained', type=str, default='', metavar='UT',
+                        help='load pretrained model path to it')
     parser.add_argument('--ce-result', default='', metavar='CE',
                         help='ce result path (default: '')')
     parser.add_argument('--kld-result', default='', metavar='KLD',
@@ -92,8 +92,9 @@ if __name__ == "__main__":
 
 
     rvae = RVAE(parameters,parameters_2)
-    if args.use_trained:
-        rvae.load_state_dict(t.load(os.path.join(os.path.join(path,'trained_RVAE'))))
+    if args.use_trained != '':
+        trainedModelName = os.path.join(os.path.join(args.use_trained,'trained_RVAE'))
+        rvae.load_state_dict(t.load(trainedModelName))
     if args.use_cuda:
         print ("Using cuda")
         rvae = rvae.cuda()
@@ -113,10 +114,15 @@ if __name__ == "__main__":
     start_index = 0
     # start_index_2 = 0
 
+    trainSize = len(batch_loader.word_tensor[0]) # 0 train - 1 validation
+    limitBatch = int(trainSize/args.batch_size)*args.batch_size
+
+    print trainSize
+
     for iteration in range(args.num_iterations):
         #This needs to be changed
-        #start_index =  (start_index+1)%50000
-        start_index = (start_index+args.batch_size)%149163
+        #start_index =  (start_index+1)%50000 quora # 331164 coco
+        start_index = (start_index+args.batch_size)%limitBatch#331136#149163 # coco 331136/331164 # quora 49984/50000
         cross_entropy, kld, coef = train_step(iteration, args.batch_size, args.use_cuda, args.dropout, start_index)
 
         # exit()
@@ -128,7 +134,7 @@ if __name__ == "__main__":
             print('\n')
             #print('------------TRAIN-------------')
             print('ITERATION\tCROSS_ENT\tKLD\tCOEF')
-            print(iteration,"\t",cross_entropy,"\t",kld,"\t",coef) #.cpu().numpy()[0]
+            print(iteration,"  ",cross_entropy,"  ",kld,"  ",coef) #.cpu().numpy()[0]
 
             if iteration %10 ==0:
                 it.append(iteration)
