@@ -1,0 +1,37 @@
+name: paraGen3
+channels:
+  - anaconda
+  - pytorch
+  - defaults
+dependencies:
+  - blas=1.0=mkl
+  - ca-certificates=2018.03.07=0
+  - certifi=2018.11.29=py27_0
+  - cffi=1.11.5=py27he75722e_1
+  - intel-openmp=2019.1=144
+  - libedit=3.1.20170329=h6b74fdf_2
+  - libffi=3.2.1=hd88cf55_4
+  - libgcc-ng=8.2.0=hdf63c60_1
+  - libgfortran-ng=7.3.0=hdf63c60_0
+  - libstdcxx-ng=8.2.0=hdf63c60_1
+  - mkl=2019.1=144
+  - mkl_fft=1.0.6=py27hd81dba3_0
+  - mkl_random=1.0.2=py27hd81dba3_0
+  - ncurses=6.1=he6710b0_1
+  - ninja=1.8.2=py27h6bb024c_1
+  - numpy=1.15.4=py27h7e9f1db_0
+  - numpy-base=1.15.4=py27hde5b4d6_0
+  - openssl=1.1.1a=h7b6447c_0
+  - pip=18.1=py27_0
+  - pycparser=2.19=py27_0
+  - python=2.7.15=h9bab390_6
+  - pytorch=1.0.0=py2.7_cuda9.0.176_cudnn7.4.1_1
+  - readline=7.0=h7b6447c_5
+  - setuptools=40.6.2=py27_0
+  - six=1.11.0=py27_1
+  - sqlite=3.25.3=h7b6447c_0
+  - tk=8.6.8=hbc83047_0
+  - wheel=0.32.3=py27_0
+  - zlib=1.2.11=h7b6447c_3
+prefix: /data/home/gbejara1/anaconda2/envs/paraGen3
+
